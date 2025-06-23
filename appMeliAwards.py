@@ -3,6 +3,7 @@ import pandas as pd
 import os
 from datetime import datetime
 import textwrap
+import openpyxl
 
 PERGUNTA_ARQUIVO = "Perguntas.xlsx"
 ACESSOS_ARQUIVO = "Acessos.xlsx"

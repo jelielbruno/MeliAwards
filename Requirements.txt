@@ -1,0 +1,6 @@
+streamlit
+pandas
+openpyxl
+datetime
+os
+textwrap

@@ -132,13 +132,12 @@ def wrap_col_names(df, width=25):
     df.columns = ['\n'.join(textwrap.wrap(str(col), width=width)) for col in df.columns]
     return df
 
+# ---- CONFIGURAÇÃO SEGURA DO APP ----
 st.set_page_config("Scorecard de Fornecedores", layout="wide", initial_sidebar_state="expanded")
+
+# --- CSS Modo Escuro e Estilização apenas de elementos textuais ---
 st.markdown("""
-    <link href="https://fonts.googleapis.com/css2?family=Montserrat:wght@400;700&display=swap" rel="stylesheet">
     <style>
-    html, body, [class*="st-"], .stApp {
-        font-family: 'Montserrat', 'Arial', sans-serif !important;
-    }
     body, .stApp {
         background: #111 !important;
         color: #fff !important;
@@ -189,15 +188,21 @@ st.markdown("""
         background: #111 !important;
         color: #fff !important;
     }
+    /* Font-family apenas para header e markdown! */
+    .stMarkdown, .stHeader {
+        font-family: 'Montserrat', 'Arial', sans-serif !important;
+    }
     </style>
 """, unsafe_allow_html=True)
 
+# LOGO CENTRALIZADO
 col1, col2, col3, col4, col5 = st.columns([1,2,2,2,1])
 with col3:
     st.image("MeliAwards.png", width=550)
 
-st.markdown(""" <h1 style='text-align: center; color: white;'>Scorecard de Fornecedores<br></h1>""", unsafe_allow_html=True)
-st.markdown("<h1 style='text-align: center; color: #FFD700;'>Programa - Meli Awards<br></h1>", unsafe_allow_html=True)
+st.markdown(""" <h1 style='text-align: center; color: white; font-family: Montserrat, Arial, sans-serif;'>Scorecard de Fornecedores<br></h1>
+    """, unsafe_allow_html=True)
+st.markdown("<h1 style='text-align: center; color: #FFD700;font-family: Montserrat, Arial, sans-serif;'>Programa - Meli Awards<br></h1>", unsafe_allow_html=True)
 
 perguntas_ref = ler_perguntas(PERGUNTA_ARQUIVO)
 acessos, categorias_df = carregar_acessos(ACESSOS_ARQUIVO)
@@ -213,7 +218,7 @@ if "pagina" not in st.session_state:
 if "admin_mode" not in st.session_state:
     st.session_state.admin_mode = False
 
-# -------- Sidebar --------
+# -------- Sidebar segura --------
 with st.sidebar:
     if st.session_state.pagina == "login":
         st.title("Menu")

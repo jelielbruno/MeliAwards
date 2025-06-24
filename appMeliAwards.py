@@ -8,22 +8,16 @@ import numpy as np
 PERGUNTA_ARQUIVO = "Perguntas.xlsx"
 ACESSOS_ARQUIVO = "Acessos.xlsx"
 RESPOSTA_ARQUIVO = "Respostas.xlsx"
-
 ADMIN_PASSWORD = "admin123"  # Troque depois em produção!
 
 def ler_perguntas(path):
     df = pd.read_excel(path, header=0)
     perguntas = {}
-    tipos_avaliacao = {
-        'Comercial': [],
-        'Técnica': [],
-        'ESG': []
-    }
+    tipos_avaliacao = {'Comercial': [], 'Técnica': [], 'ESG': []}
     for tipo in tipos_avaliacao.keys():
         cols_questao = [c for c in df.columns if tipo.lower() in str(c).lower() and "peso" not in str(c).lower()]
         cols_peso = [c for c in df.columns if tipo.lower() in str(c).lower() and "peso" in str(c).lower()]
-        cols_questao.sort()
-        cols_peso.sort()
+        cols_questao.sort(); cols_peso.sort()
         for col_q, col_p in zip(cols_questao, cols_peso):
             for idx in range(len(df)):
                 q = df.at[idx, col_q]
@@ -132,66 +126,58 @@ def wrap_col_names(df, width=25):
     df.columns = ['\n'.join(textwrap.wrap(str(col), width=width)) for col in df.columns]
     return df
 
-# ---- CONFIGURAÇÃO SEGURA DO APP ----
 st.set_page_config("Scorecard de Fornecedores", layout="wide", initial_sidebar_state="expanded")
 
-# --- CSS Modo Escuro e Estilização apenas de elementos textuais ---
+# CSS Modo escuro total, campos, selects, radios, sliders
 st.markdown("""
     <style>
-    body, .stApp {
-        background: #111 !important;
+    body, .stApp {background: #111 !important; color: #fff !important;}
+    section[data-testid="stSidebar"] {background: #181818 !important;color: #fff !important;}
+    .stTextInput>div>div>input, .stTextArea>div>textarea {
         color: #fff !important;
-    }
-    section[data-testid="stSidebar"] {
         background: #181818 !important;
+        border-color: #AAA !important;
+    }
+    /* SelectBox (dropdown) */
+    div[data-baseweb="select"] > div {
+        background-color: #181818 !important;
         color: #fff !important;
     }
-    .stTextInput > div > div > input,
-    .stTextArea > div > textarea,
-    .stSelectbox > div,
-    .stMultiSelect > div {
+    /* SelectBox expanded (aberto) */
+    .stSelectbox div[data-baseweb="select"], .stSelectbox .css-1wa3eu0-placeholder,
+    .stSelectbox .css-14el2xx-placeholder, .stSelectbox .css-1u9des2-indicatorSeparator {
+        background-color: #181818 !important;
         color: #fff !important;
-        background-color: #1c1c1c !important;
-        border-color: #646464 !important;
     }
-    .stTextInput>div>div>input,
-    .stTextArea>div>textarea {
+    /* Opções do select quando aberto */
+    div[data-baseweb="select"] [role="option"], .css-11unzgr, .css-1dimb5e {
+        color: #fff !important;
+        background: #222 !important;
+    }
+    /* Checkboxes */
+    .stCheckbox>label, .stRadio>label, .stRadio>div>div, .stRadio>div {color:#fff !important;}
+    .stRadio [data-baseweb="radio"] {background-color:#181818 !important;}
+    /* Slider */
+    .stSlider, .stSlider > div {color: #fff !important;}
+    .stSlider [role="slider"] {background: #FFD700 !important;}
+    .stSlider .css-14xtw13, .stSlider .css-1yycgk5 {background: #383838;}
+    /* Botões */
+    .stButton>button, .css-1x8cf1d, .stDownloadButton>button {
+        background: #222 !important;
+        color: #fff !important;
         border: 1px solid #444 !important;
     }
-    .stDataFrame .css-1v9z3k5 {  /* Header */
-        background: #222 !important;
-        color: #FFD700 !important;
-        font-weight: bold;
-    }
-    .stDataFrame .css-1qg05tj { /* Células */
-        color: #fff !important;
-        background: #161616 !important;
-    }
-    button, .stButton>button, .css-1x8cf1d, .stDownloadButton>button {
-        background: #222 !important;
-        color: #fff !important;
-        border: 1px solid #444 !important;
-    }
-    .block-container {
-        box-shadow: none !important;
-        background: none !important;
-    }
-    a, .css-18ni7ap, .stCheckbox>label, .stRadio>label, .stRadio>div>div {
-        color: #fff !important;
-    }
-    ::-webkit-scrollbar,
-    ::-webkit-scrollbar-thumb {
+    .block-container {box-shadow: none !important;background: none !important;}
+    a, .css-18ni7ap {color: #fff !important;}
+    ::-webkit-scrollbar, ::-webkit-scrollbar-thumb {
         background: #222 !important;
         border-radius:6px;
     }
-    .stModal {
-        background: #111 !important;
-        color: #fff !important;
-    }
-    /* Font-family apenas para header e markdown! */
-    .stMarkdown, .stHeader {
-        font-family: 'Montserrat', 'Arial', sans-serif !important;
-    }
+    /* DataFrame headers/células */
+    .stDataFrame .css-1v9z3k5 {background: #222 !important;color: #FFD700 !important;font-weight: bold;}
+    .stDataFrame .css-1qg05tj {color: #fff !important;background: #161616 !important;}
+    /* Só headers e markdown: fontes especiais */
+    .stMarkdown, .stHeader, h1,h2,h3,h4,h5 {font-family: 'Montserrat', 'Arial', sans-serif !important;}
     </style>
 """, unsafe_allow_html=True)
 
@@ -209,16 +195,14 @@ acessos, categorias_df = carregar_acessos(ACESSOS_ARQUIVO)
 
 if "email_logado" not in st.session_state:
     st.session_state.email_logado = ""
-
 if "fornecedores_responsaveis" not in st.session_state:
     st.session_state.fornecedores_responsaveis = {}
-
 if "pagina" not in st.session_state:
     st.session_state.pagina = "login"
 if "admin_mode" not in st.session_state:
     st.session_state.admin_mode = False
 
-# -------- Sidebar segura --------
+# Sidebar consistente
 with st.sidebar:
     if st.session_state.pagina == "login":
         st.title("Menu")
@@ -242,7 +226,7 @@ with st.sidebar:
             st.session_state.pagina = "Resumo Final"
         st.write(f"**E-mail logado:** {st.session_state.email_logado}")
 
-# -------- Login --------
+# LOGIN
 if st.session_state.pagina == "login":
     with st.form("login_form"):
         email = st.text_input("Seu e-mail corporativo").strip()
@@ -270,7 +254,7 @@ if st.session_state.pagina == "login":
             st.session_state.admin_mode = False
             st.rerun()
 
-# -------- Painel Admin --------
+# Painel Admin
 if st.session_state.pagina == "admin":
     st.title("Painel Administrador")
     df_respostas = obter_todas_respostas()
@@ -300,7 +284,7 @@ if st.session_state.pagina == "admin":
         st.dataframe(df_respostas, use_container_width=True, hide_index=True)
         st.download_button('Baixar todas as avaliações (CSV)', df_respostas.to_csv(index=False).encode('utf-8'), file_name='todas_avaliacoes.csv', mime='text/csv')
 
-# -------- Página 1: Avaliação --------
+# Avaliação
 if st.session_state.email_logado != "" and st.session_state.pagina == "Avaliar Fornecedores":
     tipos = get_opcoes_tipo(st.session_state.email_logado, acessos)
     tipo = st.selectbox("Tipo de avaliação", tipos, key="tipo")
@@ -364,7 +348,7 @@ if st.session_state.email_logado != "" and st.session_state.pagina == "Avaliar F
                         salvar_excel({aba: df_atualizada})
                         st.success("Avaliação registrada com sucesso!")
 
-# -------- Página 2: Prévia das Notas (Resumo Final) --------
+# Prévia das Notas
 if st.session_state.email_logado != "" and st.session_state.pagina == "Resumo Final":
     st.subheader("Resumo Final das Suas Avaliações")
     email = st.session_state.email_logado
@@ -398,7 +382,6 @@ if st.session_state.email_logado != "" and st.session_state.pagina == "Resumo Fi
             st.markdown("---")
     if not mostrou_nota:
         st.info("Você ainda não realizou nenhuma avaliação.")
-
     col1, col2 = st.columns([1,1])
     with col1:
         if st.button("Voltar para Avaliação"):

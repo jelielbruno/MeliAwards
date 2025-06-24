@@ -133,7 +133,6 @@ def wrap_col_names(df, width=25):
     return df
 
 st.set_page_config("Scorecard de Fornecedores", layout="wide", initial_sidebar_state="expanded")
-
 st.markdown("""
     <link href="https://fonts.googleapis.com/css2?family=Montserrat:wght@400;700&display=swap" rel="stylesheet">
     <style>
@@ -146,28 +145,6 @@ st.markdown("""
     }
     section[data-testid="stSidebar"] {
         background: #181818 !important;
-        color: #fff !important;
-    }
-    /* Coloque aqui apenas ajustes de cor, sem display/flex/gap no sidebar! */
-    </style>
-""", unsafe_allow_html=True)
-
-# MANTENHA widgets na sidebar logo no início:
-st.sidebar.title("Menu")
-
-# LOGO CENTRALIZADO
-col1, col2, col3, col4, col5 = st.columns([1,2,2,2,1])
-with col3:
-    st.image("MeliAwards.png", width=550)
-
-# MODO ESCURO
-st.markdown("""
-    <style>
-    body, .stApp {
-        background: #111 !important;
-        color: #fff !important;
-    }
-    div, span, p, label, .css-10trblm, .css-1v0mbdj, .css-ffhzg2 {
         color: #fff !important;
     }
     .stTextInput > div > div > input,
@@ -190,10 +167,6 @@ st.markdown("""
     .stDataFrame .css-1qg05tj { /* Células */
         color: #fff !important;
         background: #161616 !important;
-    }
-    section[data-testid="stSidebar"] {
-        background: #181818 !important;
-        color: #fff !important;
     }
     button, .stButton>button, .css-1x8cf1d, .stDownloadButton>button {
         background: #222 !important;
@@ -219,8 +192,11 @@ st.markdown("""
     </style>
 """, unsafe_allow_html=True)
 
-st.markdown(""" <h1 style='text-align: center; color: white;'>Scorecard de Fornecedores<br></h1>
-    """, unsafe_allow_html=True)
+col1, col2, col3, col4, col5 = st.columns([1,2,2,2,1])
+with col3:
+    st.image("MeliAwards.png", width=550)
+
+st.markdown(""" <h1 style='text-align: center; color: white;'>Scorecard de Fornecedores<br></h1>""", unsafe_allow_html=True)
 st.markdown("<h1 style='text-align: center; color: #FFD700;'>Programa - Meli Awards<br></h1>", unsafe_allow_html=True)
 
 perguntas_ref = ler_perguntas(PERGUNTA_ARQUIVO)
@@ -237,7 +213,31 @@ if "pagina" not in st.session_state:
 if "admin_mode" not in st.session_state:
     st.session_state.admin_mode = False
 
-# --- LOGIN ---
+# -------- Sidebar --------
+with st.sidebar:
+    if st.session_state.pagina == "login":
+        st.title("Menu")
+        st.info("Acesse e preencha o seu Scorecard")
+    elif st.session_state.pagina == "admin":
+        st.title("Painel Admin")
+        st.info("Gerenciamento e relatórios")
+        if st.button("Sair do Painel Admin"):
+            st.session_state.clear()
+            st.rerun()
+    else:
+        st.title("Menu")
+        pag = st.radio(
+            "Navegação",
+            ["Avaliar Fornecedores", "Prévia das Notas"],
+            index=0 if st.session_state.pagina == "Avaliar Fornecedores" else 1
+        )
+        if pag == "Avaliar Fornecedores":
+            st.session_state.pagina = "Avaliar Fornecedores"
+        elif pag == "Prévia das Notas":
+            st.session_state.pagina = "Resumo Final"
+        st.write(f"**E-mail logado:** {st.session_state.email_logado}")
+
+# -------- Login --------
 if st.session_state.pagina == "login":
     with st.form("login_form"):
         email = st.text_input("Seu e-mail corporativo").strip()
@@ -265,9 +265,8 @@ if st.session_state.pagina == "login":
             st.session_state.admin_mode = False
             st.rerun()
 
-# --- PAINEL ADMINISTRATIVO ---
+# -------- Painel Admin --------
 if st.session_state.pagina == "admin":
-    st.sidebar.write("🔐 **Modo administrador**")
     st.title("Painel Administrador")
     df_respostas = obter_todas_respostas()
     if df_respostas.empty:
@@ -295,16 +294,9 @@ if st.session_state.pagina == "admin":
         st.subheader("Todas as Avaliações")
         st.dataframe(df_respostas, use_container_width=True, hide_index=True)
         st.download_button('Baixar todas as avaliações (CSV)', df_respostas.to_csv(index=False).encode('utf-8'), file_name='todas_avaliacoes.csv', mime='text/csv')
-    if st.button("Sair do Painel Admin"):
-        st.session_state.clear()
-        st.rerun()
 
-# --- USUÁRIO NORMAL FLUXO NORMAL ---------------
+# -------- Página 1: Avaliação --------
 if st.session_state.email_logado != "" and st.session_state.pagina == "Avaliar Fornecedores":
-    st.sidebar.write(f"**E-mail logado:** {st.session_state.email_logado}")
-    if st.sidebar.button("Sair"):
-        st.session_state.clear()
-        st.rerun()
     tipos = get_opcoes_tipo(st.session_state.email_logado, acessos)
     tipo = st.selectbox("Tipo de avaliação", tipos, key="tipo")
     categorias = get_opcoes_categorias(st.session_state.email_logado, tipo, acessos)
@@ -366,10 +358,8 @@ if st.session_state.email_logado != "" and st.session_state.pagina == "Avaliar F
                         st.session_state.fornecedores_responsaveis.setdefault(tipo, []).append(fornecedor_selecionado)
                         salvar_excel({aba: df_atualizada})
                         st.success("Avaliação registrada com sucesso!")
-    if st.button("Prévia das Notas (Resumo Final)"):
-        st.session_state.pagina = "Resumo Final"
-        st.rerun()
 
+# -------- Página 2: Prévia das Notas (Resumo Final) --------
 if st.session_state.email_logado != "" and st.session_state.pagina == "Resumo Final":
     st.subheader("Resumo Final das Suas Avaliações")
     email = st.session_state.email_logado
@@ -403,6 +393,7 @@ if st.session_state.email_logado != "" and st.session_state.pagina == "Resumo Fi
             st.markdown("---")
     if not mostrou_nota:
         st.info("Você ainda não realizou nenhuma avaliação.")
+
     col1, col2 = st.columns([1,1])
     with col1:
         if st.button("Voltar para Avaliação"):

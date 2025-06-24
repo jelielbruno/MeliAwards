@@ -132,15 +132,28 @@ def wrap_col_names(df, width=25):
     df.columns = ['\n'.join(textwrap.wrap(str(col), width=width)) for col in df.columns]
     return df
 
-st.set_page_config("Scorecard de Fornecedores", layout="wide")
+st.set_page_config("Scorecard de Fornecedores", layout="wide", initial_sidebar_state="expanded")
+
 st.markdown("""
     <link href="https://fonts.googleapis.com/css2?family=Montserrat:wght@400;700&display=swap" rel="stylesheet">
     <style>
     html, body, [class*="st-"], .stApp {
         font-family: 'Montserrat', 'Arial', sans-serif !important;
     }
+    body, .stApp {
+        background: #111 !important;
+        color: #fff !important;
+    }
+    section[data-testid="stSidebar"] {
+        background: #181818 !important;
+        color: #fff !important;
+    }
+    /* Coloque aqui apenas ajustes de cor, sem display/flex/gap no sidebar! */
     </style>
 """, unsafe_allow_html=True)
+
+# MANTENHA widgets na sidebar logo no início:
+st.sidebar.title("Menu")
 
 # LOGO CENTRALIZADO
 col1, col2, col3, col4, col5 = st.columns([1,2,2,2,1])

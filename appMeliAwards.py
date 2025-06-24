@@ -8,7 +8,7 @@ import numpy as np
 PERGUNTA_ARQUIVO = "Perguntas.xlsx"
 ACESSOS_ARQUIVO = "Acessos.xlsx"
 RESPOSTA_ARQUIVO = "Respostas.xlsx"
-ADMIN_PASSWORD = "admin123"  # Troque depois em produção!
+ADMIN_PASSWORD = "admin123"   # Troque depois em produção!
 
 def ler_perguntas(path):
     df = pd.read_excel(path, header=0)
@@ -128,56 +128,59 @@ def wrap_col_names(df, width=25):
 
 st.set_page_config("Scorecard de Fornecedores", layout="wide", initial_sidebar_state="expanded")
 
-# CSS Modo escuro total, campos, selects, radios, sliders
+# ======================================
+# CSS: Modo escuro total e campos custom dark
+# ======================================
 st.markdown("""
     <style>
     body, .stApp {background: #111 !important; color: #fff !important;}
     section[data-testid="stSidebar"] {background: #181818 !important;color: #fff !important;}
-    .stTextInput>div>div>input, .stTextArea>div>textarea {
-        color: #fff !important;
-        background: #181818 !important;
-        border-color: #AAA !important;
-    }
-    /* SelectBox (dropdown) */
-    div[data-baseweb="select"] > div {
+    /* Input fields */
+    input, textarea, select {
         background-color: #181818 !important;
         color: #fff !important;
     }
-    /* SelectBox expanded (aberto) */
-    .stSelectbox div[data-baseweb="select"], .stSelectbox .css-1wa3eu0-placeholder,
-    .stSelectbox .css-14el2xx-placeholder, .stSelectbox .css-1u9des2-indicatorSeparator {
+    /* Streamlit Selectbox/dropdown e opcionais, SIMULA SEMPRE ESCURO */
+    div[data-baseweb="select"], div[data-baseweb="select"] * {
         background-color: #181818 !important;
         color: #fff !important;
+        border-color: #FFD700 !important;
     }
-    /* Opções do select quando aberto */
-    div[data-baseweb="select"] [role="option"], .css-11unzgr, .css-1dimb5e {
+    /* Placeholders nos selectbox */
+    .css-1wa3eu0-placeholder, .css-14el2xx-placeholder, .css-1u9des2-indicatorSeparator {color: #ccc !important;}
+    /* Itens marcados ou destacados */
+    [role="option"] {color:#fff !important;background:#181818 !important;}
+    .stSelectbox>div>div>div>div {color: #fff !important;}
+    /* Botões Streamlit */
+    .stButton>button, .stFormSubmitButton>button, .css-1x8cf1d, .stDownloadButton>button {
+        background-color: #222 !important;
+        border: 1.5px solid #FFD700 !important;
         color: #fff !important;
-        background: #222 !important;
+        font-weight: bold;
+        border-radius:8px !important;
+        padding:6px 20px !important;
     }
-    /* Checkboxes */
+    .stButton>button:focus, .stButton>button:hover, .stFormSubmitButton>button:focus, .stFormSubmitButton>button:hover {
+        background-color: #FFD700 !important;
+        color: #222 !important;
+    }
+    /* Checkboxes & Radios no modo escuro */
     .stCheckbox>label, .stRadio>label, .stRadio>div>div, .stRadio>div {color:#fff !important;}
     .stRadio [data-baseweb="radio"] {background-color:#181818 !important;}
-    /* Slider */
-    .stSlider, .stSlider > div {color: #fff !important;}
+    /* Slider (barra e ponteiro) */
+    .stSlider, .stSlider > div {color:#fff !important;}
     .stSlider [role="slider"] {background: #FFD700 !important;}
-    .stSlider .css-14xtw13, .stSlider .css-1yycgk5 {background: #383838;}
-    /* Botões */
-    .stButton>button, .css-1x8cf1d, .stDownloadButton>button {
-        background: #222 !important;
-        color: #fff !important;
-        border: 1px solid #444 !important;
-    }
-    .block-container {box-shadow: none !important;background: none !important;}
-    a, .css-18ni7ap {color: #fff !important;}
-    ::-webkit-scrollbar, ::-webkit-scrollbar-thumb {
-        background: #222 !important;
-        border-radius:6px;
-    }
+    .stSlider .css-14xtw13, .stSlider .css-1yycgk5 {background: #181818;}
+    /* Scrollbar escuro */
+    ::-webkit-scrollbar, ::-webkit-scrollbar-thumb {background: #222 !important;border-radius:6px;}
     /* DataFrame headers/células */
     .stDataFrame .css-1v9z3k5 {background: #222 !important;color: #FFD700 !important;font-weight: bold;}
     .stDataFrame .css-1qg05tj {color: #fff !important;background: #161616 !important;}
-    /* Só headers e markdown: fontes especiais */
+    /* Textos especiais */
     .stMarkdown, .stHeader, h1,h2,h3,h4,h5 {font-family: 'Montserrat', 'Arial', sans-serif !important;}
+    /* Placeholders e help/erro */
+    .st-curriculum {color:#FFD700 !important;}
+    .stAlert, .css-1kyxreq, .st-cc, .css-vfskoc {background:#222 !important;color:#FFD700 !important;}
     </style>
 """, unsafe_allow_html=True)
 
@@ -202,7 +205,7 @@ if "pagina" not in st.session_state:
 if "admin_mode" not in st.session_state:
     st.session_state.admin_mode = False
 
-# Sidebar consistente
+# -------- Sidebar consistente + botão sair --------
 with st.sidebar:
     if st.session_state.pagina == "login":
         st.title("Menu")
@@ -210,7 +213,7 @@ with st.sidebar:
     elif st.session_state.pagina == "admin":
         st.title("Painel Admin")
         st.info("Gerenciamento e relatórios")
-        if st.button("Sair do Painel Admin"):
+        if st.button("Sair do Painel Admin") or st.button("Sair"):
             st.session_state.clear()
             st.rerun()
     else:
@@ -225,6 +228,9 @@ with st.sidebar:
         elif pag == "Prévia das Notas":
             st.session_state.pagina = "Resumo Final"
         st.write(f"**E-mail logado:** {st.session_state.email_logado}")
+        if st.button("Sair"):
+            st.session_state.clear()
+            st.rerun()
 
 # LOGIN
 if st.session_state.pagina == "login":
@@ -232,9 +238,10 @@ if st.session_state.pagina == "login":
         email = st.text_input("Seu e-mail corporativo").strip()
         admin_check = st.checkbox("Sou administrador")
         admin_password = None
+        col_login1, col_login2 = st.columns([1,1])
         if admin_check:
             admin_password = st.text_input("Senha do Administrador", type="password")
-        submitted_login = st.form_submit_button("Entrar")
+        submitted_login = col_login1.form_submit_button("Entrar")
     if submitted_login:
         if admin_check:
             if admin_password == ADMIN_PASSWORD:
@@ -254,7 +261,7 @@ if st.session_state.pagina == "login":
             st.session_state.admin_mode = False
             st.rerun()
 
-# Painel Admin
+# Painel admin
 if st.session_state.pagina == "admin":
     st.title("Painel Administrador")
     df_respostas = obter_todas_respostas()

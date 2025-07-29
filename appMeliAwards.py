@@ -1,17 +1,28 @@
 import streamlit as st
 import pandas as pd
-import os
+import gspread
+from oauth2client.service_account import ServiceAccountCredentials
 from datetime import datetime
 import textwrap
 import numpy as np
 
-PERGUNTA_ARQUIVO = "Perguntas.xlsx"
-ACESSOS_ARQUIVO = "Acessos.xlsx"
-RESPOSTA_ARQUIVO = "Respostas.xlsx"
-ADMIN_PASSWORD = "admin123"   # Troque depois em produção!
+# IDs das planilhas compartilhadas no Google Sheets
+PERGUNTAS_ID = "1-mlYet1m6pN510WN8V-6XEJyDovXdlQN0TLzlr0WcPY"
+ACESSOS_ID = "1p5bzFBwAOAisFZLlt3lqXjDPJG-GfL2xkkm3fxQhQRU"
+RESPOSTAS_ID = "1OKhItXlUwmYGGIVBpNIO_48Hsb5wIRZlZ6a8p_ZbheA"
+ADMIN_PASSWORD = "admin123"
 
-def ler_perguntas(path):
-    df = pd.read_excel(path, header=0)
+# Conectar com Google Sheets
+def conectar_planilha(sheet_id):
+    scope = ["https://spreadsheets.google.com/feeds", "https://www.googleapis.com/auth/drive"]
+    creds = ServiceAccountCredentials.from_json_keyfile_dict(st.secrets["gspread"], scope)
+    client = gspread.authorize(creds)
+    return client.open_by_key(sheet_id)
+
+def ler_perguntas(_):
+    sheet = conectar_planilha(PERGUNTAS_ID)
+    worksheet = sheet.get_worksheet(0)
+    df = pd.DataFrame(worksheet.get_all_records())
     perguntas = {}
     tipos_avaliacao = {'Comercial': [], 'Técnica': [], 'ESG': []}
     for tipo in tipos_avaliacao.keys():
@@ -27,38 +38,20 @@ def ler_perguntas(path):
         perguntas[tipo] = tipos_avaliacao[tipo]
     return perguntas
 
-def carregar_acessos(path):
-    acessos = pd.read_excel(path, sheet_name='Acessos')
-    categorias = pd.read_excel(path, sheet_name='Categorias')
+def carregar_acessos(_):
+    sheet = conectar_planilha(ACESSOS_ID)
+    acessos = pd.DataFrame(sheet.worksheet("Acessos").get_all_records())
+    categorias = pd.DataFrame(sheet.worksheet("Categorias").get_all_records())
     return acessos, categorias
 
-def checar_usuario(email, tipo, categoria, acessos):
-    filtro = (
-        (acessos.iloc[:, 0].str.lower() == email.lower()) &
-        (acessos.iloc[:, 1].str.lower() == tipo.lower()) &
-        (acessos.iloc[:, 2] == categoria)
-    )
-    return not acessos[filtro].empty
-
-def get_opcoes_tipo(email, acessos):
-    return acessos[acessos.iloc[:,0].str.lower() == email.lower()].iloc[:,1].dropna().unique().tolist()
-
-def get_opcoes_categorias(email, tipo, acessos):
-    return acessos[
-        (acessos.iloc[:,0].str.lower() == email.lower()) &
-        (acessos.iloc[:,1].str.lower() == tipo.lower())
-    ].iloc[:,2].dropna().unique().tolist()
-
-def fornecedores_para_categoria(categoria, categorias):
-    fornecedores = categorias[categorias.iloc[:,0] == categoria].iloc[:,1].dropna().tolist()
-    return fornecedores
-
 def obter_df_resposta(aba):
-    if os.path.exists(RESPOSTA_ARQUIVO):
-        xls = pd.ExcelFile(RESPOSTA_ARQUIVO)
-        if aba in xls.sheet_names:
-            return pd.read_excel(RESPOSTA_ARQUIVO, sheet_name=aba)
-    return pd.DataFrame()
+    sheet = conectar_planilha(RESPOSTAS_ID)
+    try:
+        worksheet = sheet.worksheet(aba)
+        data = worksheet.get_all_records()
+        return pd.DataFrame(data)
+    except:
+        return pd.DataFrame()
 
 def obter_todas_respostas():
     abas = ['Comercial', 'Técnica', 'ESG']
@@ -107,19 +100,42 @@ def salvar_resposta_ponderada(tipo, email, categoria, fornecedor, respostas, per
         df = df[todas_colunas]
     else:
         df = nova_df
+    salvar_df_em_planilha(aba, df)
     return aba, df
 
+def salvar_df_em_planilha(aba, df):
+    sheet = conectar_planilha(RESPOSTAS_ID)
+    try:
+        worksheet = sheet.worksheet(aba)
+        worksheet.clear()
+    except:
+        worksheet = sheet.add_worksheet(title=aba, rows="1000", cols="50")
+    worksheet.update([df.columns.values.tolist()] + df.values.tolist())
+
 def salvar_excel(tabela: dict):
-    if os.path.exists(RESPOSTA_ARQUIVO):
-        xls = pd.ExcelFile(RESPOSTA_ARQUIVO)
-        abas_existentes = {s: pd.read_excel(RESPOSTA_ARQUIVO, sheet_name=s) for s in xls.sheet_names if s not in tabela}
-    else:
-        abas_existentes = {}
-    with pd.ExcelWriter(RESPOSTA_ARQUIVO, engine="openpyxl", mode='w') as writer:
-        for aba, df in tabela.items():
-            df.to_excel(writer, sheet_name=aba, index=False)
-        for aba, df in abas_existentes.items():
-            df.to_excel(writer, sheet_name=aba, index=False)
+    for aba, df in tabela.items():
+        salvar_df_em_planilha(aba, df)
+
+def checar_usuario(email, tipo, categoria, acessos):
+    filtro = (
+        (acessos.iloc[:, 0].str.lower() == email.lower()) &
+        (acessos.iloc[:, 1].str.lower() == tipo.lower()) &
+        (acessos.iloc[:, 2] == categoria)
+    )
+    return not acessos[filtro].empty
+
+def get_opcoes_tipo(email, acessos):
+    return acessos[acessos.iloc[:,0].str.lower() == email.lower()].iloc[:,1].dropna().unique().tolist()
+
+def get_opcoes_categorias(email, tipo, acessos):
+    return acessos[
+        (acessos.iloc[:,0].str.lower() == email.lower()) &
+        (acessos.iloc[:,1].str.lower() == tipo.lower())
+    ].iloc[:,2].dropna().unique().tolist()
+
+def fornecedores_para_categoria(categoria, categorias):
+    fornecedores = categorias[categorias.iloc[:,0] == categoria].iloc[:,1].dropna().tolist()
+    return fornecedores
 
 def wrap_col_names(df, width=25):
     df = df.copy()
@@ -129,7 +145,7 @@ def wrap_col_names(df, width=25):
 st.set_page_config("Scorecard de Fornecedores", layout="wide", initial_sidebar_state="expanded")
 
 # ======================================
-# CSS: Modo escuro total e campos custom dark
+# CSS: Modo escuro total e campos custom dark By: Bruno Jeliel
 # ======================================
 st.markdown("""
     <style>
